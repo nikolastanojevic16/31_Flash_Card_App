@@ -3,28 +3,41 @@ import pandas
 import random
 
 BACKGROUND_COLOR = "#B1DDC6"
+card = {}
+to_learn = {}
 
 # ------------------ DATA ------------------ #
 
-data = pandas.read_csv("data/french_words.csv")
-data_list_of_dict = data.to_dict(orient="records")
-card = {}
+try:
+    data = pandas.read_csv("data/words_to_learn.csv")
+except FileNotFoundError:
+    original_data = pandas.read_csv("data/french_words.csv")
+    to_learn = original_data.to_dict(orient="records")
+else:
+    to_learn = data.to_dict(orient="records")
 
 
 def flip_card():
     canvas.itemconfig(canvas_image, image=card_back_image)
-    canvas.itemconfig(title_text, fill="white", text=list(card.keys())[1])
+    canvas.itemconfig(title_text, fill="white", text="English")
     canvas.itemconfig(word_text, fill="white", text=card["English"])
 
 
 def next_card():
     global card, flip_timer
     window.after_cancel(flip_timer)
-    card = random.choice(data_list_of_dict)
+    card = random.choice(to_learn)
     canvas.itemconfig(canvas_image, image=card_front_image)
-    canvas.itemconfig(title_text, text=list(card.keys())[0], fill="black")
+    canvas.itemconfig(title_text, text="French", fill="black")
     canvas.itemconfig(word_text, text=card["French"], fill="black")
     flip_timer = window.after(3000, flip_card)
+
+
+def is_known():
+    to_learn.remove(card)
+    data_to_learn = pandas.DataFrame(to_learn)
+    data_to_learn.to_csv("data/words_to_learn.csv", index=False)
+    next_card()
 
 
 # ------------------ UI SETUP --------------------- #
@@ -44,7 +57,7 @@ word_text = canvas.create_text(400, 263, text="Word", fill="black", font=("Ariel
 canvas.grid(column=0, row=0, columnspan=2)
 
 right_button_image = PhotoImage(file="images/right.png")
-right_button = Button(image=right_button_image, highlightthickness=0, command=next_card)
+right_button = Button(image=right_button_image, highlightthickness=0, command=is_known)
 right_button.grid(column=1, row=1)
 
 wrong_button_image = PhotoImage(file="images/wrong.png")
